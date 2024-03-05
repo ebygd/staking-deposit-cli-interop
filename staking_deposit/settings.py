@@ -1,8 +1,29 @@
 from typing import Dict, NamedTuple
 from eth_utils import decode_hex
+import requests
+import sys
 
 DEPOSIT_CLI_VERSION = '2.7.0'
 
+
+def fetch_interop_setting():
+    """Fetch the necessary genesis information from the beacon endpoint for a private devnet"""
+    url = 'http://localhost:3500/eth/v1/beacon/genesis'
+    try:
+        response = requests.get(url)
+        data = response.json()['data']
+    except requests.exceptions.RequestException as e:
+        print("Error: the devnet has to be running")
+        sys.exit(1)
+
+    genesis_fork_version = data['genesis_fork_version'][2:] 
+    genesis_validators_root = data['genesis_validators_root'][2:]
+
+    return BaseChainSetting(
+        NETWORK_NAME='interop',
+        GENESIS_FORK_VERSION=bytes.fromhex(genesis_fork_version),
+        GENESIS_VALIDATORS_ROOT=bytes.fromhex(genesis_validators_root)
+    )
 
 class BaseChainSetting(NamedTuple):
     NETWORK_NAME: str
@@ -16,6 +37,7 @@ PRATER = 'prater'
 SEPOLIA = 'sepolia'
 ZHEJIANG = 'zhejiang'
 HOLESKY = 'holesky'
+INTEROP = 'interop'
 
 # Mainnet setting
 MainnetSetting = BaseChainSetting(
@@ -37,7 +59,8 @@ ZhejiangSetting = BaseChainSetting(
 HoleskySetting = BaseChainSetting(
     NETWORK_NAME=HOLESKY, GENESIS_FORK_VERSION=bytes.fromhex('01017000'),
     GENESIS_VALIDATORS_ROOT=bytes.fromhex('9143aa7c615a7f7115e2b6aac319c03529df8242ae705fba9df39b79c59fa8b1'))
-
+# interop setting
+InteropSetting = fetch_interop_setting()
 
 ALL_CHAINS: Dict[str, BaseChainSetting] = {
     MAINNET: MainnetSetting,
@@ -46,6 +69,7 @@ ALL_CHAINS: Dict[str, BaseChainSetting] = {
     SEPOLIA: SepoliaSetting,
     ZHEJIANG: ZhejiangSetting,
     HOLESKY: HoleskySetting,
+    INTEROP: InteropSetting,
 }
 
 
